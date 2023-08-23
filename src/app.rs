@@ -1,7 +1,7 @@
 use eframe::{egui::{self, RichText}, epaint::Color32};
-use serialport::{SerialPort, SerialPortBuilder};
+use serialport::SerialPort;
 
-use crate::tty::tty_connection::tty_connect;
+use crate::tty::{tty_connection::tty_connect, tty_communication::{tty_has_message, tty_read_message}};
 
 
 pub struct App{
@@ -20,6 +20,14 @@ impl Default for App{
 
 impl eframe::App for App{
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+
+        if self.port.is_some(){
+            if tty_has_message(&self.port).expect("Error while reading port!") {
+                let message : String = tty_read_message(&mut self.port).expect("Error while reading port!");
+                println!("{}", message);
+            }
+        }
+
         custom_window_frame(ctx, frame, "Gerber Driller", |ui| {
             ui.horizontal_top(|ui| {
                 let text_size : f32 = 24.0;
@@ -51,7 +59,9 @@ impl eframe::App for App{
                     self.port = match tty_connect(&self.available_ports[self.selected_port]){
                         Ok(v) => Some(v),
                         Err(e) => panic!("{}", e),
-                    }
+                    };
+                    // wait until we receive the initial "Grbl 1.1f ['$' for help]" message
+                    while !tty_has_message(&self.port).expect("Error reading port!"){}
                 }
             });
             ui.separator();

@@ -29,11 +29,14 @@ fn main() -> Result<(), eframe::Error>{
 
     // println!("{}", String::from_utf8(buffer).unwrap());
 
+    const WINDOW_WIDTH : f32  = 1080.0;
+    const WINDOW_HEIGHT : f32 = WINDOW_WIDTH / (16.0 / 9.0);
+
     let options = eframe::NativeOptions{
         decorated: false,
         transparent: true,
-        min_window_size: Some(egui::Vec2 { x: 640.0, y: 480.0 }),
-        initial_window_size: Some(egui::Vec2 { x: 640.0, y: 480.0 }),
+        min_window_size: Some(egui::Vec2 { x: WINDOW_WIDTH, y: WINDOW_HEIGHT }),
+        initial_window_size: Some(egui::Vec2 { x: WINDOW_WIDTH, y: WINDOW_HEIGHT }),
         ..Default::default()
     };
 
