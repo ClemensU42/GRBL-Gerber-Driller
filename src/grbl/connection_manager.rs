@@ -1,3 +1,5 @@
+use eframe::egui;
+
 use crate::{tty::{tty_connection::tty_connect, tty_communication::tty_has_message}, app};
 
 use super::console::read_to_console;
@@ -13,7 +15,7 @@ pub fn connection_manager_thread_fun(port_name: String){
 
     while unsafe { app::HAS_CONNECTION }{
         match read_to_console(&mut port){
-            Ok(_) => {},
+            Ok(received) => { if received { egui::Context::request_repaint(unsafe { &app::CONTEXT.as_ref().unwrap() }); }},
             Err(e) => println!("{}", e),
         }
     }

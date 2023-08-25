@@ -1,4 +1,4 @@
-use eframe::egui::Ui;
+use eframe::{egui::Ui, epaint::{Rounding, Color32}};
 use serialport::SerialPort;
 
 use crate::tty::tty_communication::{tty_has_message, tty_read_message};
@@ -11,6 +11,11 @@ static MAX_CONSOLE_MESSAGES : u32 = 128;
 pub fn render_console(ui: &mut Ui){
     let mut available_height : f32 = ui.available_height();
     let mut i : usize = 0;
+
+    ui.painter().rect_filled(
+        ui.available_rect_before_wrap(), 
+        Rounding::from(10.0), 
+    Color32::from_rgb(40, 40, 40));
 
     unsafe{
         CONSOLE_IS_RENDERING = true;
@@ -26,7 +31,7 @@ pub fn render_console(ui: &mut Ui){
     }
 }
 
-pub fn read_to_console(port_opt: &mut Option<Box<dyn SerialPort>>) -> Result<(), Box<dyn std::error::Error>>{
+pub fn read_to_console(port_opt: &mut Option<Box<dyn SerialPort>>) -> Result<bool, Box<dyn std::error::Error>>{
     if tty_has_message(&port_opt)?{
         let msg: String = tty_read_message(port_opt)?;
         unsafe{
@@ -35,6 +40,7 @@ pub fn read_to_console(port_opt: &mut Option<Box<dyn SerialPort>>) -> Result<(),
             }
             CONSOLE_LOGS.push(msg);
         }
+        return Ok(true);
     }
-    Ok(())
+    Ok(false)
 }

@@ -6,6 +6,7 @@ use egui_extras::StripBuilder;
 use crate::grbl::{console::render_console, connection_manager::connection_manager_thread_fun};
 
 pub static mut HAS_CONNECTION : bool = false;
+pub static mut CONTEXT : Option<egui::Context> = None;
 
 pub struct App{
     pub available_ports : Vec<String>,
@@ -60,6 +61,8 @@ impl eframe::App for App{
                         self.current_port = self.available_ports[self.selected_port].clone();
                         
                         let port_name = self.current_port.clone();
+
+                        unsafe { CONTEXT = Some(ctx.clone()); }
 
                         // start console thread
                         thread::spawn(|| { connection_manager_thread_fun(port_name);});
