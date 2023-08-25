@@ -2,6 +2,7 @@ use std::thread;
 
 use eframe::{egui::{self, RichText}, epaint::Color32};
 use egui_extras::StripBuilder;
+use rfd::FileDialog;
 
 use crate::grbl::{console::render_console, connection_manager::connection_manager_thread_fun};
 
@@ -74,6 +75,13 @@ impl eframe::App for App{
                         unsafe { HAS_CONNECTION = false };
                         self.is_connecting = false;
                     }
+                }
+
+                if ui.button(RichText::new("Open Drill File").size(text_size)).clicked() {
+                    let _files = FileDialog::new()
+                        .add_filter("Drill File", &["gbr"])
+                        .set_directory("/")
+                        .pick_file();
                 }
             });
             ui.separator();
