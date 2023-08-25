@@ -1,43 +1,43 @@
+use std::thread;
+
 use eframe::{egui::{self, RichText}, epaint::Color32};
-use serialport::SerialPort;
+use egui_extras::StripBuilder;
 
-use crate::tty::{tty_connection::tty_connect, tty_communication::{tty_has_message, tty_read_message}};
+use crate::grbl::{console::render_console, connection_manager::connection_manager_thread_fun};
 
+pub static mut HAS_CONNECTION : bool = false;
 
 pub struct App{
     pub available_ports : Vec<String>,
     pub selected_port: usize,
-    pub port: Option<Box<dyn SerialPort>>,
+    pub is_connecting : bool,
+    pub current_port: String
 }
 
 impl Default for App{
     fn default() -> Self {
         let ports : Vec<String> = serialport::available_ports().expect("No ports found!").iter().map(|p| p.port_name.clone()).collect();
 
-        Self { available_ports: ports, selected_port: 0, port: None }
+        Self { available_ports: ports, selected_port: 0, is_connecting: false, current_port: "".to_owned()}
     }
 }
 
 impl eframe::App for App{
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-
-        if self.port.is_some(){
-            if tty_has_message(&self.port).expect("Error while reading port!") {
-                let message : String = tty_read_message(&mut self.port).expect("Error while reading port!");
-                println!("{}", message);
-            }
-        }
-
         custom_window_frame(ctx, frame, "Gerber Driller", |ui| {
             ui.horizontal_top(|ui| {
                 let text_size : f32 = 24.0;
                 ui.set_height(24.0);
                 ui.label(RichText::new("TTY ports: ").size(text_size));
                 egui::ComboBox::from_label(
-                    if self.port.is_some(){
+                    if unsafe { HAS_CONNECTION } {
                         RichText::new(format!("Connected to: {}", &self.available_ports[self.selected_port])).color(Color32::GREEN).size(text_size)
                     } else {
-                        RichText::new("not connected").color(Color32::RED).size(text_size)
+                        if self.is_connecting{
+                            RichText::new(format!("Connecting to: {}", &self.available_ports[self.selected_port])).color(Color32::YELLOW).size(text_size)
+                        } else {
+                            RichText::new("Not connected").color(Color32::RED).size(text_size)
+                        }
                     }
                 )
                     .selected_text(RichText::new(&self.available_ports[self.selected_port]).size(text_size))
@@ -54,18 +54,57 @@ impl eframe::App for App{
                         }
                     }
                 );
-                if ui.button(RichText::new("Connect").size(text_size)).clicked() {
-                    println!("Selected port: {}", self.available_ports[self.selected_port]);
-                    self.port = match tty_connect(&self.available_ports[self.selected_port]){
-                        Ok(v) => Some(v),
-                        Err(e) => panic!("{}", e),
-                    };
-                    // wait until we receive the initial "Grbl 1.1f ['$' for help]" message
-                    while !tty_has_message(&self.port).expect("Error reading port!"){}
+                if unsafe { !HAS_CONNECTION }{
+                    if ui.button(RichText::new("Connect").size(text_size)).clicked() {
+                        println!("Selected port: {}", self.available_ports[self.selected_port]);
+                        self.current_port = self.available_ports[self.selected_port].clone();
+                        
+                        let port_name = self.current_port.clone();
+
+                        // start console thread
+                        thread::spawn(|| { connection_manager_thread_fun(port_name);});
+                        self.is_connecting = true;
+                    }
+                } else {
+                    if ui.button(RichText::new("Disconnect").size(text_size)).clicked() {
+                        println!("Disconnecting from port: {}", self.current_port);
+                        unsafe { HAS_CONNECTION = false };
+                        self.is_connecting = false;
+                    }
                 }
             });
             ui.separator();
-            ui.label("Main Control Content");
+            StripBuilder::new(ui)
+                .size(egui_extras::Size::remainder())
+                .vertical(|mut strip| {
+                    strip.strip(|builder|{
+                        builder
+                        .size(egui_extras::Size::relative(0.75))
+                        .size(egui_extras::Size::relative(0.24))
+                        .horizontal(|mut strip|{
+                            strip.cell(|ui|{
+                                ui.allocate_ui_with_layout(ui.max_rect().size(), egui::Layout::bottom_up(egui::Align::Center), |ui|{
+                                    ui.label(RichText::new("Left"));
+                                });
+                                ui.separator();
+                            });
+                            strip.strip(|builder| {
+                                builder
+                                .size(egui_extras::Size::relative(0.75))
+                                .size(egui_extras::Size::relative(0.24))
+                                .vertical(|mut strip|{
+                                    strip.cell(|ui|{
+                                        render_console(ui);
+                                    });
+                                    strip.cell(|ui|{
+                                        ui.label("Stuff");
+                                    });
+                                });
+                            });
+                        });
+                    });
+                });
+            
         });
     }
 
