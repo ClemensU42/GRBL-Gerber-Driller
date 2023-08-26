@@ -3,6 +3,7 @@ use eframe::egui;
 mod app;
 mod tty;
 mod grbl;
+mod gerber;
 
 fn main() -> Result<(), eframe::Error>{
     const WINDOW_WIDTH : f32  = 1080.0;

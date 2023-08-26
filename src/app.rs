@@ -4,7 +4,7 @@ use eframe::{egui::{self, RichText}, epaint::Color32};
 use egui_extras::StripBuilder;
 use rfd::FileDialog;
 
-use crate::grbl::{console::render_console, connection_manager::connection_manager_thread_fun};
+use crate::{grbl::{console::render_console, connection_manager::connection_manager_thread_fun}, gerber::{gerber_structs::{GerberCommands, GerberCommand}, gerber_parser::load_gerber_file}};
 
 pub static mut HAS_CONNECTION : bool = false;
 pub static mut CONTEXT : Option<egui::Context> = None;
@@ -78,10 +78,14 @@ impl eframe::App for App{
                 }
 
                 if ui.button(RichText::new("Open Drill File").size(text_size)).clicked() {
-                    let _files = FileDialog::new()
+                    let file = FileDialog::new()
                         .add_filter("Drill File", &["gbr"])
                         .set_directory("/")
-                        .pick_file();
+                        .pick_file().unwrap();
+                    let gerber_content: Vec<GerberCommand> = match load_gerber_file(file){
+                        Ok(v) => { v },
+                        Err(e) => { println!("{}", e); vec![] },
+                    };
                 }
             });
             ui.separator();
