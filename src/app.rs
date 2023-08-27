@@ -4,7 +4,7 @@ use eframe::{egui::{self, RichText}, epaint::Color32};
 use egui_extras::StripBuilder;
 use rfd::FileDialog;
 
-use crate::{grbl::{console::render_console, connection_manager::connection_manager_thread_fun}, gerber::{gerber_structs::{GerberCommands, GerberCommand}, gerber_parser::load_gerber_file}};
+use crate::{grbl::{console::render_console, connection_manager::connection_manager_thread_fun}, gerber::{gerber_structs::{GerberCommands, GerberCommand, GerberScene}, gerber_parser::load_gerber_file, gerber_interpreter::interprete_gerber_commands}};
 
 pub static mut HAS_CONNECTION : bool = false;
 pub static mut CONTEXT : Option<egui::Context> = None;
@@ -86,6 +86,15 @@ impl eframe::App for App{
                         Ok(v) => { v },
                         Err(e) => { println!("{}", e); vec![] },
                     };
+
+                    let scene_opt: Option<GerberScene> = match interprete_gerber_commands(gerber_content){
+                        Ok(v) => { Some(v) },
+                        Err(e) => { println!("{}", e); None }
+                    };
+                    if scene_opt.is_some(){
+                        let scene: GerberScene = scene_opt.unwrap();
+                        println!("{:?}", scene.apertures);
+                    }
                 }
             });
             ui.separator();

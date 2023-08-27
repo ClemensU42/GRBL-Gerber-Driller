@@ -200,7 +200,20 @@ fn parse_command(cmd_str: &str) -> Result<(String, GerberCommands), Box<dyn std:
                 _   => { return Err(ERR_MSG.into()); },
             };
         },
-        'X' => {},
+        'X' => {
+            if cmd_str.find("D01").is_some(){
+                data_str = cmd_str.replace("D01", "").replace("*", "");
+                command_code = GerberCommands::D01;
+            } else if cmd_str.find("D02").is_some(){
+                data_str = cmd_str.replace("D02", "").replace("*", "");
+                command_code = GerberCommands::D02;
+            } else if cmd_str.find("D03").is_some(){
+                data_str = cmd_str.replace("D03", "").replace("*", "");
+                command_code = GerberCommands::D03;
+            } else {
+                return Err(ERR_MSG.into());
+            }
+        },
         _   => { return Err(ERR_MSG.into()); }
     }
 
