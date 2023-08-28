@@ -69,10 +69,16 @@ pub struct GerberHole{
 }
 
 pub struct GerberScene{
-    pub format_specs: HashMap<String, Vec<String>>,
+    pub file_attribs: HashMap<String, Vec<String>>,
+    // the number of characters for the integer and decimal part of X and Y values
+    pub x_int_count: u32,
+    pub x_dec_count: u32,
+    pub y_int_count: u32,
+    pub y_dec_count: u32,
     pub apertures: HashMap<u32, Apertures>,
     pub mode: GerberMode,
-    pub holes: Vec<GerberHole>,
+    // tool and position of the holes
+    pub circular_holes: HashMap<u32, Vec<Vec2>>,
 }
 
 #[derive(Debug)]
